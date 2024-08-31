@@ -1,11 +1,11 @@
 import cv2
 import cvzone
 from cvzone.HandTrackingModule import HandDetector
-from questions import data_me as data
+from questions import data as data
 import time
+import pygame
 
 detector = HandDetector(detectionCon=0.8, maxHands=1)
-print(len(data))
 
 width = 1280
 height = 720
@@ -35,7 +35,7 @@ option4_y = 350
 #Circles
 circles = []
 circle_y = 550
-circle_x_incr = 50
+circle_x_incr = 30
 circleAddStatus = True
 
 
@@ -54,20 +54,20 @@ class MCQ():
         
 
     def gameUpdate(self, x, y, bbox_list):
-        global circles, circle_x_incr, circle_y, circleAddStatus
+        global circles, circle_x_incr, circle_y, circleAddStatus, score
         for i, bbox in enumerate(bbox_list):
             x1, y1, x2, y2 = bbox
             if x1 < x < x2 and y1 < y < y2:
                 self.player_answer = i+1
                 if self.player_answer == self.answer:
-                    cv2.rectangle(img, (x1, y1), (x2, y2), (0 ,200, 0), cv2.FILLED)
+                    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), cv2.FILLED)
                     color = (0, 255, 0) #Green Color for right choice
                 else:
-                    cv2.rectangle(img, (x1, y1), (x2, y2), (200, 0, 0), cv2.FILLED)
+                    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), cv2.FILLED)
                     color = (0, 0, 255) #Red Color for wrong choice
                 
                 if circleAddStatus:
-                    circles.append(((0 + circle_x_incr, circle_y), color))
+                    circles.append(((5 + circle_x_incr, circle_y), color))
                     answer_selected_time = time.time()  # Record the time when the answer is selected
                     circleAddStatus = False  # Set the flag
                     print(f"Answer selected at {answer_selected_time}")
@@ -81,12 +81,42 @@ google_yellow = (244, 180, 0)
 google_red = (219, 68, 55)
 google_black = (0, 0, 0)
 
+
+#backgroung image load
+background_img = cv2.imread('./Resources/final_background.jpg')
+
+#Ending
+def endScreen(score):
+    # Copy the background image to img
+    img = cv2.resize(background_img, (width, height))
+
+    # Overlay the score text on the img
+    text1 = f"Your Score Is: {score}"
+    text2 = f"Thank you for playing!"
+    pos1 = (int(width/2)-150, int(height/2))  # Bottom-left corner of the text string in the image
+    pos2 = (int(width/2 - 200), int(height/2 + 50))
+    font = cv2.FONT_HERSHEY_COMPLEX
+    font_scale = 1
+    color = (255, 255, 255)  # Black color in BGR
+    thickness = 3
+    cv2.putText(img, text1, pos1, font, font_scale, color, thickness, cv2.LINE_AA)
+    cv2.putText(img, text2, pos2, font, font_scale, color, thickness, cv2.LINE_AA)
+
+    # Display the img with the background and score
+    cv2.imshow("Quiz Game", img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+
+# print("Enter category you want to play: ", end='', flush=True)
+# ask_data = int(input())
+
 # MCQ Object Creation
 list_mcq = []
 for data in data:
     list_mcq.append(MCQ(data))
-
-# print(len(list_mcq))
+    
 
 #Intialize question number
 question_num = 0
@@ -139,14 +169,23 @@ while start:
                         answer_selected_time = time.time()
                         print(f"Answer selected at {answer_selected_time}")
     else:
+        #score
+        score = 0
+        for mcq in list_mcq:
+            if mcq.player_answer == mcq.answer:
+                score+=1
+        print("Score", score)
+        
+        endScreen(score)
+        
         start = False
                         
     #Check if time required wait happened or not
-    if answer_selected_time and time.time() - answer_selected_time > 0.3:
+    if answer_selected_time and time.time() - answer_selected_time > 0.15:
         print(f"Check: {time.time() - answer_selected_time}")
-        question_num += 1
         circle_x_incr += 120 
         circleAddStatus = True
+        question_num += 1
         answer_selected_time = None
         print(f"Moving to question {question_num}")
                         
@@ -156,7 +195,7 @@ while start:
         cv2.circle(img, circle_center, 30, color, cv2.FILLED)
 
     
-    cv2.imshow("Img", img)
+    cv2.imshow("Quiz Game", img)
     cv2.waitKey(1)
 
 
