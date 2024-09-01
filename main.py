@@ -10,27 +10,32 @@ detector = HandDetector(detectionCon=0.8, maxHands=1)
 width = 1280
 height = 720
 
+logo = cv2.imread('./Resources/logo2.png', cv2.IMREAD_UNCHANGED)
+
+logo = cv2.resize(logo, (100, 100))
 # cvzone set up
 cap = cv2.VideoCapture(0)
 cap.set(3, width)  #set width
 cap.set(4, height)   #set height
 
 #Initialize pos
-question_x = 200
-question_y = 100
+question_x = 10
+question_y = 200
 
-option1_x = 200
-option1_y = 200
+option1_x = 100
+option1_y = 300
 
-option2_x = 700
-option2_y = 200
+option2_x = 800
+option2_y = 300
 
-option3_x = 200
-option3_y = 350
+option3_x = 100
+option3_y = 400
 
-option4_x = 700
-option4_y = 350
+option4_x = 800
+option4_y = 400
 
+logo_x = 500
+logo_y = 350
 
 #Circles
 circles = []
@@ -107,7 +112,8 @@ def endScreen(score):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
+def overlay_image(img, logo, x, y):
+    img[y:y + logo.shape[0], x:x + logo.shape[1]] = logo
 
 # print("Enter category you want to play: ", end='', flush=True)
 # ask_data = int(input())
@@ -117,6 +123,23 @@ list_mcq = []
 for data in data:
     list_mcq.append(MCQ(data))
     
+#Split Text
+def split_text(text, max_char_per_line=30):
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+
+    for word in words:
+        if len(current_line) + len(word) + 1 <= max_char_per_line:
+            current_line += word + " "
+        else:
+            lines.append(current_line.strip())
+            current_line = word + " "
+
+    lines.append(current_line.strip())
+    return lines
+
+
 
 #Intialize question number
 question_num = 0
@@ -138,11 +161,20 @@ while start:
     if question_num < total_question:
         mcq = list_mcq[question_num]
         
-        img, bbox1  = cvzone.putTextRect(img, list_mcq[question_num].question, (question_x, question_y), scale=2, thickness=2, colorR=background_color, colorT=google_black, offset=5, border=1)
-        img, bbox2  = cvzone.putTextRect(img, list_mcq[question_num].option1, (option1_x, option1_y), scale=3, thickness=2, colorR=background_color, colorT=google_blue, offset=10, border=1)
-        img, bbox3  = cvzone.putTextRect(img, list_mcq[question_num].option2, (option2_x, option2_y), scale=3, thickness=2, colorR=background_color, colorT=google_green, offset=10, border=1)
-        img, bbox4  = cvzone.putTextRect(img, list_mcq[question_num].option3, (option3_x, option3_y), scale=3, thickness=2, colorR=background_color, colorT=google_blue, offset=10, border=1)
-        img, bbox5  = cvzone.putTextRect(img, list_mcq[question_num].option4, (option4_x, option4_y), scale=3, thickness=2, colorR=background_color, colorT=google_red, offset=10, border=1)
+        # Display the question with split text
+        question_text = mcq.question
+        question_lines = split_text(question_text, max_char_per_line=70)
+
+        current_y = question_y
+        for line in question_lines:
+            img, _ = cvzone.putTextRect(img, line, (question_x, current_y), scale=2, thickness=2, colorR=background_color, colorT=google_black, offset=5, border=1)
+            current_y += 40
+
+        # Display the options
+        img, bbox2 = cvzone.putTextRect(img, mcq.option1, (option1_x, option1_y), scale=3, thickness=2, colorR=background_color, colorT=google_blue, offset=10, border=1)
+        img, bbox3 = cvzone.putTextRect(img, mcq.option2, (option2_x, option2_y), scale=3, thickness=2, colorR=background_color, colorT=google_green, offset=10, border=1)
+        img, bbox4 = cvzone.putTextRect(img, mcq.option3, (option3_x, option3_y), scale=3, thickness=2, colorR=background_color, colorT=google_blue, offset=10, border=1)
+        img, bbox5 = cvzone.putTextRect(img, mcq.option4, (option4_x, option4_y), scale=3, thickness=2, colorR=background_color, colorT=google_red, offset=10, border=1)
     
         if hands:
             hand = hands[0]
@@ -194,6 +226,11 @@ while start:
     for circle_center, color in circles:
         cv2.circle(img, circle_center, 30, color, cv2.FILLED)
 
+    # Define the position where you want to place the logo
+    overlay_image(img, logo, logo_x, logo_y)
+
+    
+        
     
     cv2.imshow("Quiz Game", img)
     cv2.waitKey(1)
